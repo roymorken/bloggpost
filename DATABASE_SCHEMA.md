@@ -1,0 +1,123 @@
+# DATABASE_SCHEMA.md
+
+## suppliers
+- id (uuid, pk)
+- supplier_name (text, not null)
+- supplier_code (text, nullable)
+- primary_email (text, nullable)
+- cc_emails (text[], nullable)
+- notes (text, nullable)
+- created_at (timestamp)
+- updated_at (timestamp)
+
+## import_batches
+- id (uuid, pk)
+- filename (text, not null)
+- file_type (text, not null)
+- row_count (int, not null)
+- status (text, not null)
+- created_at (timestamp)
+
+## blog_posts
+- id (uuid, pk)
+- import_batch_id (uuid, fk -> import_batches.id)
+- supplier_id (uuid, fk -> suppliers.id)
+- blog_post_url (text, not null)
+- title (text, nullable)
+- source_date (date, nullable)
+- notes (text, nullable)
+- created_at (timestamp)
+
+## jobs
+- id (uuid, pk)
+- import_batch_id (uuid, fk -> import_batches.id)
+- status (text, not null)
+- started_at (timestamp, nullable)
+- finished_at (timestamp, nullable)
+- total_blog_posts (int, default 0)
+- total_links (int, default 0)
+- total_flight_searches (int, default 0)
+- created_at (timestamp)
+
+## blog_post_checks
+- id (uuid, pk)
+- job_id (uuid, fk -> jobs.id)
+- blog_post_id (uuid, fk -> blog_posts.id)
+- original_url (text, not null)
+- final_url (text, nullable)
+- http_status (int, nullable)
+- status_category (text, not null)
+- response_time_ms (int, nullable)
+- checked_at (timestamp)
+- error_message (text, nullable)
+
+## extracted_links
+- id (uuid, pk)
+- blog_post_check_id (uuid, fk -> blog_post_checks.id)
+- anchor_text (text, nullable)
+- link_url (text, not null)
+- final_url (text, nullable)
+- http_status (int, nullable)
+- status_category (text, not null)
+- checked_at (timestamp)
+- error_message (text, nullable)
+
+## landing_page_sessions
+- id (uuid, pk)
+- extracted_link_id (uuid, fk -> extracted_links.id)
+- started_at (timestamp)
+- finished_at (timestamp)
+- browse_duration_seconds (int)
+- proxy_session_id (text, nullable)
+- status (text, not null)
+- error_message (text, nullable)
+
+## flight_search_results
+- id (uuid, pk)
+- job_id (uuid, fk -> jobs.id)
+- supplier_id (uuid, fk -> suppliers.id)
+- blog_post_id (uuid, fk -> blog_posts.id)
+- extracted_link_id (uuid, fk -> extracted_links.id)
+- landing_page_url (text, nullable)
+- origin (text, not null)
+- destination (text, not null)
+- depart_date (date, not null)
+- return_date (date, not null)
+- trip_length_days (int, default 5)
+- price_amount (numeric(12,2), nullable)
+- currency (text, nullable)
+- provider_name (text, nullable)
+- result_rank (int, nullable)
+- captured_at (timestamp)
+- status (text, not null)
+- error_message (text, nullable)
+
+## reports
+- id (uuid, pk)
+- job_id (uuid, fk -> jobs.id)
+- supplier_id (uuid, fk -> suppliers.id, nullable)
+- report_type (text, not null)
+- report_scope (text, not null)
+- file_path (text, nullable)
+- generated_at (timestamp)
+
+## email_templates
+- id (uuid, pk)
+- template_name (text, not null)
+- scope (text, not null)
+- subject_template (text, not null)
+- body_template (text, not null)
+- created_at (timestamp)
+- updated_at (timestamp)
+
+## email_logs
+- id (uuid, pk)
+- report_id (uuid, fk -> reports.id)
+- supplier_id (uuid, fk -> suppliers.id, nullable)
+- recipients (text[], not null)
+- cc_recipients (text[], nullable)
+- subject (text, not null)
+- body (text, not null)
+- status (text, not null)
+- sent_at (timestamp, nullable)
+- error_message (text, nullable)
