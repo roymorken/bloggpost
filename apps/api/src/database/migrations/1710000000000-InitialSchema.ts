@@ -156,10 +156,10 @@ export class InitialSchema1710000000000 implements MigrationInterface {
 
       -- Seed default email templates
       INSERT INTO email_templates (template_name, scope, subject_template, body_template) VALUES
-      ('Leverandørrapport', 'supplier', 'Bloggpost-rapport for {{supplierName}} - {{reportDate}}',
-       'Hei,\n\nVedlagt finner du rapporten for {{supplierName}}.\n\nAktive URL-er: {{activeCount}}\nFeil: {{errorCount}}\n404: {{notFoundCount}}\nLaveste pris: {{lowestPrice}}\nHøyeste pris: {{highestPrice}}\n\nMvh\nBloggpost Monitor'),
-      ('Internrapport', 'internal', 'Intern rapport - {{reportDate}}',
-       'Intern statusrapport generert {{reportDate}}.\n\nSe vedlagt PDF for detaljer.');
+      ('Supplier Report', 'supplier', 'Blog Post Report for {{supplierName}} - {{reportDate}}',
+       'Hi,\n\nWe have completed our review of the blog posts associated with {{supplierName}}.\n\nThe following blog post URLs have errors and are no longer accessible:\n\n{{failedUrlList}}\n\nBroken links found within blog posts:\n\n{{brokenLinkList}}\n\nPlease publish a new equivalent blog post on the same blog post server to replace each failed URL, and notify us with the updated links.\n\nThe full report is attached as a PDF.\n\nBest regards,\nBlog Post Monitor'),
+      ('Internal Report', 'internal', 'Internal Report - {{reportDate}}',
+       'Internal status report generated {{reportDate}}.\n\nSee attached PDF for details.');
     `);
   }
 

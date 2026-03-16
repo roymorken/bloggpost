@@ -67,10 +67,10 @@ export class ReportGeneratorService {
 
     const filePath = await this.pdfService.generateReport(report.id, {
       title: supplier
-        ? `Rapport for ${supplier.supplierName}`
-        : 'Samlet rapport',
+        ? `Blog Post Report — ${supplier.supplierName}`
+        : 'Blog Post Report — All Suppliers',
       supplierName: supplier?.supplierName,
-      generatedAt: new Date().toLocaleDateString('no-NO'),
+      generatedAt: new Date().toLocaleDateString('en-GB'),
       blogPostChecks: checks.map((c) => ({
         url: c.originalUrl,
         status: c.statusCategory,

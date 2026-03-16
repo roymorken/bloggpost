@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: '/reports', label: 'Rapporter' },
   { href: '/email-templates', label: 'E-postmaler' },
   { href: '/jobs', label: 'Jobber' },
+  { href: '/live', label: 'Live Monitor' },
 ];
 
 export function Sidebar() {

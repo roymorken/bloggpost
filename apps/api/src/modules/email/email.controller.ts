@@ -18,6 +18,28 @@ export class EmailController {
     return this.service.updateTemplate(id, body);
   }
 
+  @Get('emails')
+  findAllEmails() {
+    return this.service.findAllEmails();
+  }
+
+  @Post('emails/draft-report')
+  draftReport(
+    @Body() body: { reportId: string; supplierId?: string; to: string[]; cc?: string[] },
+  ) {
+    return this.service.sendReport({ ...body, draft: true });
+  }
+
+  @Post('emails/:id/approve')
+  approveEmail(@Param('id') id: string) {
+    return this.service.approveAndSend(id);
+  }
+
+  @Post('emails/:id/reject')
+  rejectEmail(@Param('id') id: string) {
+    return this.service.rejectEmail(id);
+  }
+
   @Post('emails/send-report')
   sendReport(
     @Body() body: { reportId: string; supplierId?: string; to: string[]; cc?: string[]; customMessage?: string },

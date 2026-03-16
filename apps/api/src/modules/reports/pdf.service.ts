@@ -81,44 +81,61 @@ export class PdfService {
     // Title
     drawText(data.title, { bold: true, size: 18 });
     y -= 10;
-    if (data.supplierName) drawText(`Leverandør: ${data.supplierName}`, { size: 12 });
-    drawText(`Generert: ${data.generatedAt}`, { size: 10, color: rgb(0.4, 0.4, 0.4) });
+    if (data.supplierName) drawText(`Supplier: ${data.supplierName}`, { size: 12 });
+    drawText(`Generated: ${data.generatedAt}`, { size: 10, color: rgb(0.4, 0.4, 0.4) });
     y -= 20;
 
-    // Summary
-    drawText('Sammendrag', { bold: true, size: 14 });
+    // Filter to only failed blog posts and broken links
+    const failedChecks = data.blogPostChecks.filter((c) => c.status !== 'active');
+    const brokenLinks = data.extractedLinks.filter((l) => l.status !== 'active');
+
+    // Summary — only error counts
+    drawText('Summary', { bold: true, size: 14 });
     y -= 5;
-    drawText(`Bloggposter totalt: ${data.summary.totalBlogPosts}`);
-    drawText(`Aktive: ${data.summary.activeBlogPosts}`);
-    drawText(`404/Ikke funnet: ${data.summary.notFoundBlogPosts}`);
-    drawText(`Lenker totalt: ${data.summary.totalLinks}`);
-    drawText(`Ødelagte lenker: ${data.summary.brokenLinks}`);
-    drawText(`Flysøk utført: ${data.summary.totalSearches}`);
-    drawText(`Priser funnet: ${data.summary.pricesFound}`);
-    if (data.summary.lowestPrice) drawText(`Laveste pris: ${data.summary.lowestPrice}`);
-    if (data.summary.highestPrice) drawText(`Høyeste pris: ${data.summary.highestPrice}`);
+    drawText(`Total blog posts checked: ${data.summary.totalBlogPosts}`);
+    drawText(`Blog posts with errors: ${failedChecks.length}`);
+    drawText(`Broken links found: ${brokenLinks.length}`);
     y -= 20;
 
-    // Blog post checks
-    if (data.blogPostChecks.length > 0) {
-      drawText('Bloggpoststatus', { bold: true, size: 14 });
+    // Failed blog posts
+    if (failedChecks.length > 0) {
+      drawText('Blog Posts With Errors', { bold: true, size: 14 });
       y -= 5;
-      for (const check of data.blogPostChecks.slice(0, 50)) {
-        const statusIcon = check.status === 'active' ? '[OK]' : '[FEIL]';
-        const url = check.url.length > 60 ? check.url.slice(0, 60) + '...' : check.url;
-        drawText(`${statusIcon} ${url} - ${check.status} (${check.httpStatus ?? 'N/A'})`);
+      for (const check of failedChecks.slice(0, 50)) {
+        const url = check.url.length > 70 ? check.url.slice(0, 70) + '...' : check.url;
+        drawText(`${url}`, { color: rgb(0.8, 0, 0) });
+        drawText(`  Status: ${check.status} (HTTP ${check.httpStatus ?? 'N/A'})`);
+      }
+      y -= 10;
+
+      // Action required message
+      drawText('Action Required', { bold: true, size: 12, color: rgb(0.8, 0, 0) });
+      y -= 5;
+      drawText('The URLs listed above are no longer accessible or have errors.');
+      drawText('Please publish a new equivalent blog post on the same blog post server');
+      drawText('to replace each failed URL and notify us with the updated links.');
+      y -= 15;
+    }
+
+    // Broken extracted links
+    if (brokenLinks.length > 0) {
+      drawText('Broken Links Within Blog Posts', { bold: true, size: 14 });
+      y -= 5;
+      for (const link of brokenLinks.slice(0, 50)) {
+        const url = link.url.length > 70 ? link.url.slice(0, 70) + '...' : link.url;
+        const anchor = link.anchorText ? ` (anchor: "${link.anchorText}")` : '';
+        drawText(`${url}${anchor}`, { color: rgb(0.8, 0, 0) });
+        drawText(`  Status: ${link.status}`);
       }
       y -= 15;
     }
 
-    // Flight prices
-    if (data.flightPrices.length > 0) {
-      drawText('Flypriser', { bold: true, size: 14 });
-      y -= 5;
-      for (const price of data.flightPrices.slice(0, 30)) {
-        const priceStr = price.price ? `${price.price} ${price.currency}` : 'Ikke funnet';
-        drawText(`${price.route} | ${price.departDate} - ${price.returnDate} | ${priceStr}`);
-      }
+    // No errors case
+    if (failedChecks.length === 0 && brokenLinks.length === 0) {
+      drawText('All blog posts and links are active. No action required.', {
+        size: 12,
+        color: rgb(0, 0.5, 0),
+      });
     }
 
     const filePath = path.join(this.outputDir, `report-${reportId}.pdf`);

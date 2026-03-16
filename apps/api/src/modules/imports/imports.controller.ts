@@ -14,6 +14,11 @@ import { ImportsService } from './imports.service';
 export class ImportsController {
   constructor(private readonly service: ImportsService) {}
 
+  @Get()
+  findAll() {
+    return this.service.findAll();
+  }
+
   @Post()
   @UseInterceptors(FileInterceptor('file'))
   async upload(@UploadedFile() file: Express.Multer.File) {

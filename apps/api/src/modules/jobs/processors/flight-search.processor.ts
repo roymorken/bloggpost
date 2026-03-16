@@ -11,7 +11,7 @@ import { FLIGHT_ROUTES, computeDates, formatDate } from '../../flight-search/rou
 
 interface FlightSearchJobData {
   jobId: string;
-  extractedLinkId: string;
+  extractedLinkId: string | null;
   landingPageUrl: string;
   supplierId: string;
   blogPostId: string;
@@ -37,8 +37,12 @@ export class FlightSearchProcessor extends WorkerHost {
     const { jobId, extractedLinkId, landingPageUrl, supplierId, blogPostId } = job.data;
     const { departDate, returnDate } = computeDates();
 
-    // Find the right adapter
+    // Find the right adapter — skip if no adapter matches
     const adapter = this.adapters.find((a) => a.canHandle(landingPageUrl));
+    if (!adapter) {
+      this.logger.log(`No flight search adapter for ${landingPageUrl} — skipping`);
+      return;
+    }
 
     for (const route of FLIGHT_ROUTES) {
       try {
@@ -47,18 +51,6 @@ export class FlightSearchProcessor extends WorkerHost {
 
         await page.goto(landingPageUrl, { waitUntil: 'domcontentloaded', timeout: 60_000 });
         await page.waitForTimeout(3000);
-
-        if (!adapter) {
-          await this.saveResult({
-            jobId, supplierId, blogPostId, extractedLinkId, landingPageUrl,
-            route, departDate, returnDate,
-            status: 'no_search_form',
-            error: 'No adapter found for this landing page',
-          });
-          await page.close();
-          await context.close();
-          continue;
-        }
 
         const hasForm = await adapter.detectSearchForm(page);
         if (!hasForm) {
@@ -125,7 +117,7 @@ export class FlightSearchProcessor extends WorkerHost {
     jobId: string;
     supplierId: string;
     blogPostId: string;
-    extractedLinkId: string;
+    extractedLinkId: string | null;
     landingPageUrl: string;
     route: { origin: string; originCode: string; destination: string; destinationCode: string };
     departDate: Date;

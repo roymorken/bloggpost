@@ -16,78 +16,72 @@ export class MondoticketsAdapter implements FlightSearchAdapter {
   }
 
   async detectSearchForm(page: Page): Promise<boolean> {
-    try {
-      // Wait for dynamic content to load
-      await page.waitForTimeout(3000);
-
-      // Look for common flight search form patterns
-      const formFound = await page.evaluate(() => {
-        const selectors = [
-          'input[placeholder*="origin" i]',
-          'input[placeholder*="from" i]',
-          'input[placeholder*="depart" i]',
-          'input[placeholder*="where" i]',
-          'input[placeholder*="flying from" i]',
-          'input[name*="origin" i]',
-          'input[name*="from" i]',
-          '[class*="search-form" i]',
-          '[class*="flight-search" i]',
-          '[id*="search" i]',
-          'form[action*="search" i]',
-          'form[action*="flight" i]',
-          // Tab-based search widgets
-          '[id*="tab_container"]',
-          '[class*="tab-container"]',
-          // iframes that might contain search
-          'iframe[src*="search"]',
-          'iframe[src*="flight"]',
-          'iframe[src*="widget"]',
-        ];
-
-        for (const sel of selectors) {
-          if (document.querySelector(sel)) return true;
-        }
-        return false;
-      });
-
-      return formFound;
-    } catch {
-      return false;
-    }
+    // Always attempt search on mondotickets pages — the search widget
+    // may be lazy-loaded and only visible after scrolling, which search() handles
+    this.logger.log(`Will attempt flight search on: ${page.url()}`);
+    return true;
   }
 
   async search(page: Page, params: FlightSearchParams): Promise<FlightSearchAdapterResult> {
     try {
-      this.logger.log(`Searching ${params.originCode} → ${params.destinationCode} on mondotickets`);
+      this.logger.log(`Searching ${params.originCode} → ${params.destinationCode} on ${page.url()}`);
 
-      // Wait for the page to fully load including dynamic widgets
-      await page.waitForTimeout(5000);
+      // Wait for lazy-loaded scripts (WP Rocket delays JS on mondotickets)
+      await page.waitForTimeout(8000);
 
-      // Check for iframes first (many travel sites embed search in iframe)
-      const iframeHandle = await page.$('iframe[src*="search"], iframe[src*="flight"], iframe[src*="widget"]');
-      let searchPage: Page = page;
+      // Scroll through page to trigger lazy loading of widgets
+      await page.evaluate(async () => {
+        const step = Math.floor(document.body.scrollHeight / 5);
+        for (let i = 1; i <= 5; i++) {
+          window.scrollTo(0, step * i);
+          await new Promise((r) => setTimeout(r, 1000));
+        }
+        window.scrollTo(0, 0);
+      });
+      await page.waitForTimeout(3000);
+
+      // Check for Travelpayouts/search iframes
+      const iframeHandle = await page.$(
+        'iframe[src*="search"], iframe[src*="flight"], iframe[src*="widget"], iframe[src*="travelpayouts"], iframe[src*="aviasales"], iframe[src*="tp.media"]',
+      );
 
       if (iframeHandle) {
         const frame = await iframeHandle.contentFrame();
         if (frame) {
-          // Work within the iframe
+          this.logger.log('Found search widget iframe — filling form');
           await this.tryFillSearchForm(frame as unknown as Page, params);
         }
       } else {
+        // Try on main page
         await this.tryFillSearchForm(page, params);
       }
 
       // Wait for results
       await page.waitForTimeout(10_000);
 
-      // Try to extract prices from the page
-      const prices = await this.extractPrices(page);
+      // Try to extract prices from the page and any iframes
+      let prices = await this.extractPrices(page);
+
+      // Also check iframes for prices
+      if (prices.length === 0) {
+        const frames = page.frames();
+        for (const frame of frames) {
+          if (frame === page.mainFrame()) continue;
+          try {
+            const framePrices = await this.extractPrices(frame as unknown as Page);
+            if (framePrices.length > 0) {
+              prices = framePrices;
+              break;
+            }
+          } catch { /* iframe may be detached */ }
+        }
+      }
 
       if (prices.length === 0) {
         return {
           success: false,
           prices: [],
-          error: 'No prices found after search',
+          error: 'No prices found on landing page after search',
         };
       }
 

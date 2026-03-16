@@ -80,14 +80,16 @@ export class LandingPageProcessor extends WorkerHost {
         status: 'completed',
       });
 
-      // Queue flight search for this landing page
-      await this.flightSearchQueue.add('search-flights', {
-        jobId,
-        extractedLinkId,
-        landingPageUrl: response.url,
-        supplierId,
-        blogPostId,
-      });
+      // Only queue flight search for mondotickets.com landing pages
+      if (response.url.includes('mondotickets.com')) {
+        await this.flightSearchQueue.add('search-flights', {
+          jobId,
+          extractedLinkId,
+          landingPageUrl: response.url,
+          supplierId,
+          blogPostId,
+        });
+      }
 
       await page.close();
       await context.close();

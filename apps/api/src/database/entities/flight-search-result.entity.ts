@@ -24,8 +24,8 @@ export class FlightSearchResult {
   @Column({ type: 'uuid', name: 'blog_post_id' })
   blogPostId: string;
 
-  @Column({ type: 'uuid', name: 'extracted_link_id' })
-  extractedLinkId: string;
+  @Column({ type: 'uuid', name: 'extracted_link_id', nullable: true })
+  extractedLinkId: string | null;
 
   @Column({ type: 'text', name: 'landing_page_url', nullable: true })
   landingPageUrl: string | null;

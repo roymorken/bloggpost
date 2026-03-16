@@ -10,12 +10,14 @@ import { LandingPageProcessor } from './processors/landing-page.processor';
 import { FlightSearchProcessor } from './processors/flight-search.processor';
 import { BlogPostChecksController } from './processors/blog-post-checks.controller';
 import { EventsController } from './events.gateway';
+import { PipelineStatusController } from './pipeline-status.controller';
 import { BlogPostsModule } from '../blog-posts/blog-posts.module';
 import { BrowserModule } from '../browser/browser.module';
+import { Report, EmailLog } from '../../database/entities';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Job, BlogPost, BlogPostCheck, ExtractedLink, LandingPageSession, FlightSearchResult]),
+    TypeOrmModule.forFeature([Job, BlogPost, BlogPostCheck, ExtractedLink, LandingPageSession, FlightSearchResult, Report, EmailLog]),
     BullModule.registerQueue({ name: 'url-check' }),
     BullModule.registerQueue({ name: 'link-extraction' }),
     BullModule.registerQueue({ name: 'landing-page' }),
@@ -23,7 +25,7 @@ import { BrowserModule } from '../browser/browser.module';
     BlogPostsModule,
     BrowserModule,
   ],
-  controllers: [JobsController, BlogPostChecksController, EventsController],
+  controllers: [JobsController, BlogPostChecksController, EventsController, PipelineStatusController],
   providers: [JobsService, UrlCheckProcessor, LinkExtractionProcessor, LandingPageProcessor, FlightSearchProcessor],
   exports: [JobsService],
 })
